@@ -1,5 +1,5 @@
 # RAPPORT DE PROJET : JEU DE SONGO
-**Développé par :** ONANA GREGOIRE LEGRAND
+**Développé par :** kamdem wegang marianela
 
 
 ---
