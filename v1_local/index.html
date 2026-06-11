@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Songo - Projet Onana</title>
+    <!-- Auteur: ONANA GREGOIRE LEGRAND | Matricule: 24G2060 -->
+    <style>
+        body {
+            background-color: #f5deb3;
+            text-align: center;
+            font-family: verdana, sans-serif;
+        }
+        h1 { color: #502506; }
+        
+        .le_plateau {
+            background: #da720a;
+            width: 700px;
+            margin: 0 auto;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .ligne {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+        }
+        
+        .trou {
+            width: 50px;
+            height: 50px;
+            background: rgb(202, 181, 152);
+            border-radius: 50%;
+            border: 2px solid saddlebrown;
+            text-align: center;
+            line-height: 50px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .trou:hover {
+            background: #deb887;
+        }
+        
+        /* Classe quand ce n'est pas a nous de jouer */
+        .bloque {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .affichage_scores {
+            margin-top: 30px;
+            font-size: 20px;
+        }
+        
+        #message_erreur {
+            color: red;
+            font-weight: bold;
+        }
+        
+        .footer { margin-top: 50px; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+    <h1>Le jeu de Songo</h1>
+    <h2 id="info_tour">Tour: Joueur 1 (En Bas)</h2>
+    
+    <div id="message_erreur"></div>
+
+    <div class="le_plateau">
+        <!-- ligne du haut (adversaire J2) on affiche a l envers de 13 a 7 -->
+        <div class="ligne" id="ligne_haut"></div>
+        
+        <!-- ligne du bas (J1) de 0 a 6 -->
+        <div class="ligne" id="ligne_bas"></div>
+    </div>
+    
+    <div class="affichage_scores">
+        <p>Score Joueur 2 (Haut) : <span id="score_j2">0</span></p>
+        <p>Score Joueur 1 (Bas) : <span id="score_j1">0</span></p>
+    </div>
+
+    <div class="footer">Par: ONANA GREGOIRE LEGRAND (24G2060)</div>
+
+    <script>
+        // Auteur: ONANA GREGOIRE LEGRAND | Matricule: 24G2060
+        
+        var plateau = [5,5,5,5,5,5,5, 5,5,5,5,5,5,5]; // 14 trous
+        var score_joueurs = [0, 0];
+        var joueur_actuel = 0; // 0 c'est bas, 1 c'est haut
+
+        // Pour faire tourner les graines dans le sens des aiguilles d'une montre
+        // on map le trou actuel au trou suivant
+        var trou_suivant = [7, 0, 1, 2, 3, 4, 5, 8, 9, 10, 11, 12, 13, 6];
+        
+        // pour calculer les prises on a besoin du sens inverse
+        var trou_precedent = [1, 2, 3, 4, 5, 6, 13, 0, 7, 8, 9, 10, 11, 12];
+
+        function jouer(index_trou) {
+            document.getElementById('message_erreur').innerHTML = "";
+            
+            // verification si on peut jouer
+            if(plateau[index_trou] == 0) {
+                // trou vide on fait rien
+                return;
+            }
+            if(joueur_actuel == 0 && index_trou > 6) {
+                return; // c pas son cote
+            }
+            if(joueur_actuel == 1 && index_trou < 7) {
+                return; // c pas son cote
+            }
+
+            var nb_graines = plateau[index_trou];
+            plateau[index_trou] = 0; // on vide la case
+            
+            var position_actuelle = index_trou;
+
+            // on distribue
+            while(nb_graines > 0) {
+                position_actuelle = trou_suivant[position_actuelle];
+                
+                // si on fait un tour complet on saute le trou de depart
+                if(position_actuelle == index_trou) {
+                    continue; 
+                }
+                
+                plateau[position_actuelle] = plateau[position_actuelle] + 1;
+                nb_graines--;
+            }
+
+            // --- GESTION DES PRISES ---
+            // on verifie si la derniere graine est tombee chez l'adversaire
+            var estChezAdversaire = false;
+            if(joueur_actuel == 0 && position_actuelle >= 7 && position_actuelle <= 13) {
+                estChezAdversaire = true;
+            }
+            if(joueur_actuel == 1 && position_actuelle >= 0 && position_actuelle <= 6) {
+                estChezAdversaire = true;
+            }
+
+            // trou interdi (trou numero 1 de l'adversaire)
+            var trou_interdit = 0;
+            if(joueur_actuel == 0) {
+                trou_interdit = 7;
+            } else {
+                trou_interdit = 0;
+            }
+
+            if(estChezAdversaire == true) {
+                var pos_capture = position_actuelle;
+                var total_capture = 0;
+
+                // boucle pour les prises en chaine
+                var condition_boucle = true;
+                while(condition_boucle) {
+                    // on doit etre encore chez ladversaire
+                    var chezAdv = false;
+                    if(joueur_actuel == 0 && pos_capture >= 7 && pos_capture <= 13) chezAdv = true;
+                    if(joueur_actuel == 1 && pos_capture >= 0 && pos_capture <= 6) chezAdv = true;
+                    
+                    if(!chezAdv) break;
+
+                    var graines_case = plateau[pos_capture];
+                    
+                    if(graines_case == 2 || graines_case == 3 || graines_case == 4) {
+                        // regle du trou interdit : on ne prend pas si c'est la premiere prise
+                        if(pos_capture == trou_interdit && total_capture == 0) {
+                            break;
+                        } else {
+                            total_capture = total_capture + graines_case;
+                            plateau[pos_capture] = 0;
+                        }
+                    } else {
+                        // si ca match pas on arrete la prise en chaine
+                        break; 
+                    }
+                    
+                    // on recule
+                    pos_capture = trou_precedent[pos_capture];
+                }
+                
+                score_joueurs[joueur_actuel] += total_capture;
+            }
+
+            // verifier la fin du jeu
+            var total_plateau = 0;
+            for(var k=0; k<14; k++) {
+                total_plateau += plateau[k];
+            }
+            
+            if(total_plateau < 10 || score_joueurs[0] >= 40 || score_joueurs[1] >= 40) {
+                // fin de partie on ramasse tt
+                for(var j=0; j<=6; j++) {
+                    score_joueurs[0] += plateau[j];
+                    plateau[j] = 0;
+                }
+                for(var j=7; j<=13; j++) {
+                    score_joueurs[1] += plateau[j];
+                    plateau[j] = 0;
+                }
+                dessiner_plateau();
+                
+                var texte_gagnant = "Egalite";
+                if(score_joueurs[0] > score_joueurs[1]) texte_gagnant = "Le joueur 1 a gagne !";
+                if(score_joueurs[1] > score_joueurs[0]) texte_gagnant = "Le joueur 2 a gagne !";
+                
+                alert("JEU TERMINE ! " + texte_gagnant);
+                document.getElementById('info_tour').innerHTML = texte_gagnant;
+                return;
+            }
+
+            // on change de joueur
+            if(joueur_actuel == 0) {
+                joueur_actuel = 1;
+            } else {
+                joueur_actuel = 0;
+            }
+            
+            dessiner_plateau();
+        }
+
+        // Fonction pour afficher a lecran
+        function dessiner_plateau() {
+            var div_haut = document.getElementById('ligne_haut');
+            var div_bas = document.getElementById('ligne_bas');
+            
+            div_haut.innerHTML = "";
+            div_bas.innerHTML = "";
+
+            // pour le joueur du haut on affiche a l'envers (13 a 7)
+            for(var i=13; i>=7; i--) {
+                var div_trou = document.createElement("div");
+                div_trou.className = "trou";
+                if(joueur_actuel == 0) div_trou.className += " bloque";
+                div_trou.innerHTML = plateau[i];
+                
+                // une closure pour garder la valeur de i
+                (function(index) {
+                    div_trou.onclick = function() { jouer(index); }
+                })(i);
+                
+                div_haut.appendChild(div_trou);
+            }
+
+            // pour le joueur du bas (0 a 6)
+            for(var i=0; i<=6; i++) {
+                var div_trou = document.createElement("div");
+                div_trou.className = "trou";
+                if(joueur_actuel == 1) div_trou.className += " bloque";
+                div_trou.innerHTML = plateau[i];
+                
+                (function(index) {
+                    div_trou.onclick = function() { jouer(index); }
+                })(i);
+                
+                div_bas.appendChild(div_trou);
+            }
+
+            document.getElementById('score_j1').innerHTML = score_joueurs[0];
+            document.getElementById('score_j2').innerHTML = score_joueurs[1];
+            
+            if(joueur_actuel == 0) {
+                document.getElementById('info_tour').innerHTML = "C'est au Joueur 1 (Bas) de jouer";
+            } else {
+                document.getElementById('info_tour').innerHTML = "C'est au Joueur 2 (Haut) de jouer";
+            }
+        }
+
+        // on demarre le jeu
+        dessiner_plateau();
+    </script>
+</body>
+</html>
